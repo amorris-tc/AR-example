@@ -19,8 +19,12 @@ class ViewController: UIViewController, ARSessionDelegate {
     let characterOffset: SIMD3<Float> = [-1.0, 0, 0] // Offset the character by one meter to the left
     let characterAnchor = AnchorEntity()
     
+    var tshirt: SCNNode?
+    var headOffset: Float?
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        tshirt = addShirt()
         arView.session.delegate = self
         
         // If the iOS device doesn't support body tracking, raise a developer error for
@@ -44,7 +48,6 @@ class ViewController: UIViewController, ARSessionDelegate {
         }
     
     func addShirt() -> SCNNode {
-        print("Create shirt node")
         let skNode = SKSpriteNode(imageNamed: "tshirt")
         
         let scene = SKScene(size: CGSize(width: 1595, height: 1920))
@@ -64,10 +67,10 @@ class ViewController: UIViewController, ARSessionDelegate {
     
         let node = SCNNode(geometry: plane)
         node.geometry?.firstMaterial = mat
-//        node.position = SCNVector3Make(0, 0, -1)
         
         return node
     }
+    
     func addCapsule() -> SCNNode {
         let cap = SCNCapsule(capRadius: 1.0, height: 1.0)
         let mat = SCNMaterial()
@@ -76,18 +79,18 @@ class ViewController: UIViewController, ARSessionDelegate {
         return node
     }
     
+
+    
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
-            print("Detected Anchor \(anchor)")
             guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
 
-            let anchorE = AnchorEntity(anchor: bodyAnchor)
-            let tshirt: SCNNode = addCapsule()
-            tshirt.position = SCNVector3(bodyAnchor.transform.columns.3.x, bodyAnchor.transform.columns.3.y, bodyAnchor.transform.columns.3.z)
-            arView.scene.rootNode.addChildNode(tshirt)
-            print("Anchor Position: \(bodyAnchor.transform)")
-
-            print("Body Skeleton: Head: \(bodyAnchor.skeleton.modelTransform(for: .head))")
+            tshirt?.position = SCNVector3(bodyAnchor.transform.columns.3.x, bodyAnchor.transform.columns.3.y, bodyAnchor.transform.columns.3.z)
+            arView.scene.rootNode.addChildNode(tshirt!)
+            
+            let headTransform: simd_float4x4! = bodyAnchor.skeleton.modelTransform(for: .head)
+            let headRelativeHeight = headTransform.columns.3.y
+            headOffset = headRelativeHeight / 4
         }
     }
     
@@ -96,6 +99,10 @@ class ViewController: UIViewController, ARSessionDelegate {
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         for anchor in anchors {
             guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
+            
+            let newYPosition = bodyAnchor.transform.columns.3.y + headOffset!
+            tshirt?.position = SCNVector3(bodyAnchor.transform.columns.3.x, newYPosition, bodyAnchor.transform.columns.3.z)
+            tshirt?.rotation = SCNQuaternion(1, 0, 0, 0)
             
 //            // Update the position of the character anchor's position.
 //            let bodyPosition = simd_make_float3(bodyAnchor.transform.columns.3)
@@ -112,12 +119,21 @@ class ViewController: UIViewController, ARSessionDelegate {
 //            }
         }
     }
+    
+    func session(_ session: ARSession, didRemove anchors: [ARAnchor]) {
+        for anchor in anchors {
+            guard anchor is ARBodyAnchor else { continue }
+            
+            tshirt?.removeFromParentNode()
+            print("Remove Anchor from scene")
+        }
+    }
 }
 
 extension ViewController: ARSCNViewDelegate {
     func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
             print("node for anchor")
-            guard let bodyAnchor = anchor as? ARBodyAnchor else { return nil }
+        guard anchor is ARBodyAnchor else { return nil }
             
     //        let anchorE = AnchorEntity(anchor: bodyAnchor)
             let tshirt = addShirt()
