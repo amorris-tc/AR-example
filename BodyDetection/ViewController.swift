@@ -12,7 +12,7 @@ import Combine
 
 class ViewController: UIViewController, ARSessionDelegate {
 
-    @IBOutlet var arView: ARView!
+    @IBOutlet var arView: ARSCNView!
     
     // The 3D character to display.
     var character: BodyTrackedEntity?
@@ -28,61 +28,93 @@ class ViewController: UIViewController, ARSessionDelegate {
         guard ARBodyTrackingConfiguration.isSupported else {
             fatalError("This feature is only supported on devices with an A12 chip")
         }
-
-        // Run a body tracking configration.
-        let configuration = ARBodyTrackingConfiguration()
-        arView.session.run(configuration)
         
-        arView.scene.addAnchor(characterAnchor)
+         let configuration = ARBodyTrackingConfiguration()
+         arView.session.run(configuration)
+    }
+    
+    func arscn() {
+            let scn = ARSCNView(frame: UIScreen.main.bounds)
+            scn.delegate = self
+            // scn.debugOptions = [ARSCNDebugOptions.showFeaturePoints, ARSCNDebugOptions.showWorldOrigin]
         
-        // Asynchronously load the 3D character.
-        var cancellable: AnyCancellable? = nil
-        cancellable = Entity.loadBodyTrackedAsync(named: "character/robot").sink(
-            receiveCompletion: { completion in
-                if case let .failure(error) = completion {
-                    print("Error: Unable to load model: \(error.localizedDescription)")
-                }
-                cancellable?.cancel()
-        }, receiveValue: { (character: Entity) in
-            if let character = character as? BodyTrackedEntity {
-                // Scale the character to human size
-                character.scale = [1.0, 1.0, 1.0]
-                self.character = character
-                cancellable?.cancel()
-            } else {
-                print("Error: Unable to load model as BodyTrackedEntity")
-            }
-        })
+            let config = ARBodyTrackingConfiguration()
+            let session = scn.session
+            session.run(config)
+        }
+    
+    func addShirt() -> SCNNode {
+        print("Create shirt node")
+        let skNode = SKSpriteNode(imageNamed: "tshirt")
+        
+        let scene = SKScene(size: CGSize(width: 1595, height: 1920))
+        scene.backgroundColor = .clear
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scene.scaleMode = .aspectFill
+        scene.addChild(skNode)
+    
+        let mat = SCNMaterial()
+        mat.diffuse.contents = scene
+        mat.diffuse.contentsTransform = SCNMatrix4MakeScale(1.0, -1.0, 1.0)
+        mat.transparencyMode = .aOne
+        mat.diffuse.wrapT = .repeat
+        mat.isDoubleSided = true
+    
+        let plane = SCNPlane(width: 1, height: 1)
+    
+        let node = SCNNode(geometry: plane)
+        node.geometry?.firstMaterial = mat
+//        node.position = SCNVector3Make(0, 0, -1)
+        
+        return node
     }
     
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
-        print("Initial Body Addition")
         for anchor in anchors {
+            print("Detected Anchor \(anchor)")
             guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
-            
+
+            let anchorE = AnchorEntity(anchor: bodyAnchor)
+            let tshirt = addShirt()
+            arView.scene.rootNode.addChildNode(tshirt)
             print("Anchor Position: \(bodyAnchor.transform)")
-            
+
             print("Body Skeleton: Head: \(bodyAnchor.skeleton.modelTransform(for: .head))")
         }
     }
+    
+    
     
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         for anchor in anchors {
             guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
             
-            // Update the position of the character anchor's position.
-            let bodyPosition = simd_make_float3(bodyAnchor.transform.columns.3)
-            characterAnchor.position = bodyPosition + characterOffset
-            // Also copy over the rotation of the body anchor, because the skeleton's pose
-            // in the world is relative to the body anchor's rotation.
-            characterAnchor.orientation = Transform(matrix: bodyAnchor.transform).rotation
-   
-            if let character = character, character.parent == nil {
-                // Attach the character to its anchor as soon as
-                // 1. the body anchor was detected and
-                // 2. the character was loaded.
-                characterAnchor.addChild(character)
-            }
+//            // Update the position of the character anchor's position.
+//            let bodyPosition = simd_make_float3(bodyAnchor.transform.columns.3)
+//            characterAnchor.position = bodyPosition + characterOffset
+//            // Also copy over the rotation of the body anchor, because the skeleton's pose
+//            // in the world is relative to the body anchor's rotation.
+//            characterAnchor.orientation = Transform(matrix: bodyAnchor.transform).rotation
+//
+//            if let character = character, character.parent == nil {
+//                // Attach the character to its anchor as soon as
+//                // 1. the body anchor was detected and
+//                // 2. the character was loaded.
+//                characterAnchor.addChild(character)
+//            }
         }
     }
 }
+
+extension ViewController: ARSCNViewDelegate {
+    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
+            print("node for anchor")
+            guard let bodyAnchor = anchor as? ARBodyAnchor else { return nil }
+            
+    //        let anchorE = AnchorEntity(anchor: bodyAnchor)
+            let tshirt = addShirt()
+            
+            return tshirt
+        }
+}
+
