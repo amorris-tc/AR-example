@@ -48,7 +48,7 @@ class ViewController: UIViewController, ARSessionDelegate {
         }
     
     func addShirt() -> SCNNode {
-        let skNode = SKSpriteNode(imageNamed: "tshirt")
+        let skNode = SKSpriteNode(imageNamed: "tshirt-cut")
         
         let scene = SKScene(size: CGSize(width: 1595, height: 1920))
         scene.backgroundColor = .clear
