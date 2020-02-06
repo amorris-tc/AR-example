@@ -55,6 +55,17 @@ class ViewController: UIViewController, ARSessionDelegate {
         })
     }
     
+    func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
+        print("Initial Body Addition")
+        for anchor in anchors {
+            guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
+            
+            print("Anchor Position: \(bodyAnchor.transform)")
+            
+            print("Body Skeleton: Head: \(bodyAnchor.skeleton.modelTransform(for: .head))")
+        }
+    }
+    
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         for anchor in anchors {
             guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
