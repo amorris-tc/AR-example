@@ -68,6 +68,13 @@ class ViewController: UIViewController, ARSessionDelegate {
         
         return node
     }
+    func addCapsule() -> SCNNode {
+        let cap = SCNCapsule(capRadius: 1.0, height: 1.0)
+        let mat = SCNMaterial()
+        mat.diffuse.contents = UIColor.red
+        let node = SCNNode(geometry: cap)
+        return node
+    }
     
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
@@ -75,7 +82,8 @@ class ViewController: UIViewController, ARSessionDelegate {
             guard let bodyAnchor = anchor as? ARBodyAnchor else { continue }
 
             let anchorE = AnchorEntity(anchor: bodyAnchor)
-            let tshirt = addShirt()
+            let tshirt: SCNNode = addCapsule()
+            tshirt.position = SCNVector3(bodyAnchor.transform.columns.3.x, bodyAnchor.transform.columns.3.y, bodyAnchor.transform.columns.3.z)
             arView.scene.rootNode.addChildNode(tshirt)
             print("Anchor Position: \(bodyAnchor.transform)")
 
