@@ -48,7 +48,7 @@ class ViewController: UIViewController, ARSessionDelegate {
         }
     
     func addShirt() -> SCNNode {
-        let skNode = SKSpriteNode(imageNamed: "tshirt-cut")
+        let skNode = SKSpriteNode(imageNamed: "cool-shirt-cut")
         
         let scene = SKScene(size: CGSize(width: 1595, height: 1920))
         scene.backgroundColor = .clear
@@ -58,7 +58,7 @@ class ViewController: UIViewController, ARSessionDelegate {
     
         let mat = SCNMaterial()
         mat.diffuse.contents = scene
-        mat.diffuse.contentsTransform = SCNMatrix4MakeScale(1.0, -1.0, 1.0)
+        mat.diffuse.contentsTransform = SCNMatrix4MakeScale(1.10, -1.10, 1)
         mat.transparencyMode = .aOne
         mat.diffuse.wrapT = .repeat
         mat.isDoubleSided = true
@@ -90,7 +90,7 @@ class ViewController: UIViewController, ARSessionDelegate {
             
             let headTransform: simd_float4x4! = bodyAnchor.skeleton.modelTransform(for: .head)
             let headRelativeHeight = headTransform.columns.3.y
-            headOffset = headRelativeHeight / 4
+            headOffset = headRelativeHeight / 3
         }
     }
     
